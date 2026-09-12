@@ -161,16 +161,23 @@ function runChromium({
       }
       done = true;
       clearTimeout(timer);
+      clearTimeout(quietTimer);
       try { proc.kill(); } catch {}
       resolve(value);
     };
+    // After the wait marker appears, allow a quiet period for any
+    // remaining stdout chunks to land: --dump-dom output can exceed a
+    // single pipe chunk, and finishing on the first chunk that happens
+    // to contain the marker truncates the capture.
+    let quietTimer = null;
     proc.stdout.on('data', d => {
       out += d;
-      // a harness page writes its summary into the dumped DOM; once it
-      // appears there is nothing more to wait for (the browser may linger)
       if (waitMarker && out.includes(waitMarker)) {
-        console.log('  [browser] marker captured, ending early');
-        finish(out);
+        clearTimeout(quietTimer);
+        quietTimer = setTimeout(() => {
+          console.log('  [browser] marker captured, ending early');
+          finish(out);
+        }, 500);
       }
     });
     proc.stderr.on('data', d => (err += d));
