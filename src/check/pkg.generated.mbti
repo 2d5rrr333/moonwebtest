@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "2d5rrr333/moonwebtest/check"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn effect_types(Array[Json]) -> Array[String]
+
+pub fn find_effect(Array[Json], String) -> Json?
+
+pub fn parse_envelope(String) -> Envelope?
+
+// Errors
+
+// Types and methods
+pub(all) struct Envelope {
+  state : Json?
+  effects : Array[Json]
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

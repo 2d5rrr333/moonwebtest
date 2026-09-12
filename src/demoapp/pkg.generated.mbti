@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "2d5rrr333/moonwebtest/demoapp"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn demo_dispatch(String) -> String
+
+pub fn demo_init(String) -> String
+
+// Errors
+
+// Types and methods
+pub enum DemoEffect {
+  Saved
+  Notified(message~ : String)
+} derive(Eq, @debug.Debug)
+
+pub enum DemoEvent {
+  Inc
+  Dec
+  Reset
+} derive(Eq, @debug.Debug)
+
+pub(all) struct DemoState {
+  count : Int
+} derive(Eq, ToJson, @debug.Debug)
+
+// Type aliases
+
+// Traits

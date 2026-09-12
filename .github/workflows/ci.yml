@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install MoonBit toolchain
+        # latest: official distribution proved flaky to pin across platforms
+        # (see mtab's CI notes); the verified baseline is local windows
+        # 0.1.20260827.
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Toolchain version
+        run: moon version --all
+
+      - name: Check
+        run: moon check
+
+      - name: Unit tests (check package + demoapp moon layer)
+        run: moon test
+
+      - name: Build demo wasm (release)
+        run: moon build --target wasm-gc --release
+
+      - name: Self e2e (Node harness drives the demo wasm)
+        run: node scripts/self-e2e.mjs

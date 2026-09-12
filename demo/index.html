@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>moonwebtest demo · bridge counter</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32em; margin: 2em auto; }
+    button { font-size: 1.2em; margin-right: .5em; }
+    #toast { margin-top: 1em; color: #b00; }
+  </style>
+</head>
+<body>
+  <h1>moonwebtest demo</h1>
+  <p>count = <strong id="count">?</strong></p>
+  <button type="button" id="inc">+1</button>
+  <button type="button" id="dec">-1</button>
+  <button type="button" id="reset">reset</button>
+  <div id="toast" hidden></div>
+
+  <!-- In-page self checks following the moonwebtest marker contract:
+       lines with 'PASS '/'FAIL ' plus a #test-summary final line. -->
+  <ol id="test-results"></ol>
+  <p id="test-summary">SUMMARY-PENDING</p>
+
+  <script type="module">
+    import { bootBridge } from './vendor/moonbridge.mjs';
+
+    const results = [];
+    function check(name, cond, detail) {
+      results.push({ name, ok: !!cond, detail });
+      const li = document.createElement('li');
+      li.textContent = (cond ? 'PASS ' : 'FAIL ') + name +
+        (cond || detail === undefined ? '' : ' :: ' + JSON.stringify(detail));
+      document.getElementById('test-results').appendChild(li);
+    }
+
+    let toastTimer = null;
+    const app = await bootBridge({
+      wasmUrl: 'wasm/demoapp.wasm',
+      init: 'demo_init',
+      dispatch: 'demo_dispatch',
+      initArgs: () => [localStorage.getItem('demo.state') || ''],
+      onState: state => { document.getElementById('count').textContent = state.count; },
+      effects: {
+        save: (_eff, ctx) => {
+          try { localStorage.setItem('demo.state', JSON.stringify(ctx.state)); } catch {}
+        },
+        notify_error: eff => {
+          const t = document.getElementById('toast');
+          t.textContent = eff.message;
+          t.hidden = false;
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => { t.hidden = true; }, 1500);
+        },
+      },
+    });
+    window.app = app; // console handle
+
+    // wire the buttons to bridge events
+    document.getElementById('inc').addEventListener('click', () => app.dispatch({ type: 'inc' }));
+    document.getElementById('dec').addEventListener('click', () => app.dispatch({ type: 'dec' }));
+    document.getElementById('reset').addEventListener('click', () => app.dispatch({ type: 'reset' }));
+
+    check('boot applies init state', document.getElementById('count').textContent === '0');
+
+    // full loop: real click -> dispatch -> wasm -> envelope -> onState -> DOM
+    document.getElementById('inc').click();
+    check('inc click round-trips to the DOM', document.getElementById('count').textContent === '1');
+
+    app.dispatch({ type: 'inc' });
+    check('programmatic dispatch updates state', app.state.count === 2);
+
+    app.dispatch({ type: 'dec' });
+    app.dispatch({ type: 'dec' });
+    check('dec to floor keeps state', app.state.count === 0);
+
+    app.dispatch({ type: 'dec' });
+    await new Promise(r => setTimeout(r, 0));
+    check('floor dec surfaces notify_error', !document.getElementById('toast').hidden &&
+      document.getElementById('toast').textContent === '已经是 0 了');
+
+    const err = app.dispatchRaw('not json');
+    check('garbage event answers an error envelope', err.effects[0].type === 'notify_error');
+
+    const failed = results.filter(r => !r.ok).length;
+    document.getElementById('test-summary').textContent =
+      failed === 0 ? `ALL ${results.length} BROWSER CHECKS PASSED` : `${failed} FAILURES`;
+  </script>
+</body>
+</html>

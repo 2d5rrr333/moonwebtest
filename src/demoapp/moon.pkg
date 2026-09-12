@@ -1,0 +1,18 @@
+// Demo app: a counter over the bridge, used to self-test the toolkit's
+// Node harness and headless runner. Mirrors moonbridge's src/demo but adds
+// a tiny web page (demo/) the browser tools can drive.
+
+import {
+  "2d5rrr333/moonbridge/bridge",
+  "moonbitlang/core/json",
+}
+
+import {
+  "2d5rrr333/moonwebtest/check",
+} for "test"
+
+pkgtype(kind: "foreign_library")
+
+options(
+  link: { "wasm-gc": { "use-js-builtin-string": true } },
+)

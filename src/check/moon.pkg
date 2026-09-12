@@ -1,0 +1,9 @@
+// Package check: moon-level assertions on bridge envelopes (wire format).
+//
+// Use inside `moon test` blackbox tests to assert what actually goes over
+// the JSON bridge — decoded envelope shape and effect types — independent
+// of any app-specific state/effect types.
+
+import {
+  "moonbitlang/core/json",
+}
